@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-
 import logging
+import re
+from datetime import datetime
 
 from scrapy import Request
 from scrapy.exceptions import CloseSpider
@@ -18,18 +19,21 @@ class MacAppSoSpider(Spider):
     allowed_domains = ['macapp.so']
     start_urls = ['https://www.macapp.so/wallpaper/index.html']
 
+    DATE_PATTERN = re.compile(r'\d{4}[-/]\d{2}[-/]\d{2}')
+
     def parse(self, response):
-        links = response.css('div.wallpaper ul li h2 a')
+        li_list = response.css('div.wallpaper ul li')
         page_links = response.css('div.wallpaper div.page a')
         page = response.css('div.wallpaper div.page').xpath('./b/text()').extract_first()
 
-        if len(links) == 0:
+        if len(li_list) == 0:
             logger.warning('Image crawl failed')
             raise CloseSpider('Image crawl failed')
 
-        for index, link in enumerate(links):
-            name = link.xpath('string()').extract_first()
-            href = link.xpath('@href').extract_first()
+        for index, li in enumerate(li_list):
+            name = li.xpath('./h2/a/text()').extract_first()
+            href = li.xpath('./h2/a/@href').extract_first()
+            date = li.xpath('./span[1]/text()').extract_first()
             next_url = response.urljoin(href)
 
             # args = (str(index + 1).zfill(2), name, next_url)
@@ -41,6 +45,11 @@ class MacAppSoSpider(Spider):
             item['name'] = name
             item['referer'] = next_url
 
+            match = self.DATE_PATTERN.search(date)
+            if match:
+                date_time = datetime.strptime(match.group(0), '%Y/%m/%d')
+                item['datetime'] = date_time
+
             Wait.wait_seconds(1, 3)
             yield Request(next_url, meta={'item': item}, callback=self.parse_raw_image)
 
@@ -50,7 +59,8 @@ class MacAppSoSpider(Spider):
         next_url = response.urljoin(href)
 
         if name == '下一页':
-            yield Request(next_url, callback=self.parse)
+            # yield Request(next_url, callback=self.parse)
+            pass
         else:
             logger.error('Gets next page failed')
 

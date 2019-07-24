@@ -6,16 +6,12 @@
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 import os
+from datetime import datetime
+from io import BytesIO
+from urllib.parse import urlparse
 
 import six
-
-try:
-    from cStringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
-
 from PIL import Image
-from urllib.parse import urlparse
 from scrapy.http import Request
 from scrapy.pipelines.images import ImagesPipeline, ImageException
 
@@ -47,13 +43,17 @@ class SavePicturePipeline(ImagesPipeline):
 
     def file_path(self, request, response=None, info=None):
         item = request.meta['item']
+
+        file_dir = self._get_file_dir(item)
         file_name = self._get_file_name(item)
-        return os.path.join('full', file_name)
+        return os.path.join('full', file_dir, file_name)
 
     def thumb_path(self, request, thumb_id, response=None, info=None):
         item = request.meta['item']
+
+        file_dir = self._get_file_dir(item)
         file_name = self._get_file_name(item)
-        return os.path.join('thumbs', thumb_id, file_name)
+        return os.path.join('thumbs', file_dir, thumb_id, file_name)
 
     def get_images(self, response, request, info):
         path = self.file_path(request, response=response, info=info)
@@ -83,3 +83,13 @@ class SavePicturePipeline(ImagesPipeline):
         seq = str(item['seq']).zfill(2)
 
         return '%s-%s[%s]%s' % (page, seq, real_name, file_ext)
+
+    @staticmethod
+    def _get_file_dir(item):
+        date_time = item['datetime']
+        if date_time:
+            file_dir = datetime.strftime(date_time, '%Y-%m')
+        else:
+            file_dir = ''
+
+        return file_dir

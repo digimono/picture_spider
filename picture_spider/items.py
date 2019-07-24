@@ -13,4 +13,5 @@ class PictureItem(scrapy.Item):
     seq = scrapy.Field()
     name = scrapy.Field()
     url = scrapy.Field()
+    datetime = scrapy.Field()
     referer = scrapy.Field()
