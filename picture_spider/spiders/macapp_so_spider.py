@@ -59,8 +59,7 @@ class MacAppSoSpider(Spider):
         next_url = response.urljoin(href)
 
         if name == '下一页':
-            # yield Request(next_url, callback=self.parse)
-            pass
+            yield Request(next_url, callback=self.parse)
         else:
             logger.error('Gets next page failed')
 
