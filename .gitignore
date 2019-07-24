@@ -1,0 +1,12 @@
+.DS_Store
+
+.idea/
+__pycache__/
+
+venv/
+build/
+*.egg-info/
+
+dist/
+!dist/*.csv
+!dist/*.json
